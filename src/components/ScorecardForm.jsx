@@ -132,7 +132,7 @@ const ScorecardForm = () => {
                 }
             };
 
-            const response = await api.post('/calculate', payload);
+            const response = await api.post('/scorecards', payload);
             navigate('/result', { state: { result: response.data } });
 
         } catch (error) {

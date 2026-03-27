@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../api';
 import { Calculator } from 'lucide-react';
 
@@ -30,7 +30,12 @@ const InputGroup = ({ label, name, value, onChange, type = "number", step = "0.1
 
 const ScorecardForm = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [loading, setLoading] = useState(false);
+
+    // Edit mode detection
+    const isEdit = location.state?.isEdit || false;
+    const editId = location.state?.editId || null;
 
     // Initial State matching Backend Pydantic Model
     const [formData, setFormData] = useState({
@@ -91,6 +96,13 @@ const ScorecardForm = () => {
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
+
+    // Prefill form when navigating from Edit button
+    useEffect(() => {
+        if (location.state?.scorecardData) {
+            setFormData(prev => ({ ...prev, ...location.state.scorecardData }));
+        }
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Helper to calculate active restaurants
     const calculateActiveRestaurants = () => {
@@ -167,8 +179,14 @@ const ScorecardForm = () => {
                 }
             };
 
-            const response = await api.post('/scorecards', payload);
-            navigate('/result', { state: { result: response.data } });
+            // POST (create) or PUT (update)
+            let response;
+            if (isEdit && editId) {
+                response = await api.put(`/scorecards/${editId}`, payload);
+            } else {
+                response = await api.post('/scorecards', payload);
+            }
+            navigate('/result', { state: { result: response.data, mode: isEdit ? 'view' : 'preview' } });
 
         } catch (error) {
             console.error("Score calculation error", error);
@@ -181,10 +199,10 @@ const ScorecardForm = () => {
         <div className="container animate-fade-in">
             <header className="nav-header">
                 <div>
-                    <h1>New Scorecard</h1>
-                    <p className="text-sm">Enter metrics for {formData.selectedMonth} {formData.selectedYear}</p>
+                    <h1>{isEdit ? 'Edit Scorecard' : 'New Scorecard'}</h1>
+                    <p className="text-sm">{isEdit ? 'Modify metrics and update the score' : `Enter metrics for ${formData.selectedMonth} ${formData.selectedYear}`}</p>
                 </div>
-                <button className="btn-secondary" onClick={() => navigate('/')}>Dashboard</button>
+                <button className="btn-secondary" onClick={() => navigate(isEdit ? '/leaderboard' : '/')}>Dashboard</button>
             </header>
 
             <form onSubmit={handleSubmit} className="card">
@@ -286,7 +304,7 @@ const ScorecardForm = () => {
                         Calculated using <strong>{calculateActiveRestaurants()}</strong> active restaurants based on filled inputs.
                     </p>
                     <button type="submit" className="btn-primary" disabled={loading} style={{ width: '100%', fontSize: '1.2rem' }}>
-                        {loading ? 'Calculating...' : 'Generate Scorecard'} <Calculator size={20} />
+                        {loading ? (isEdit ? 'Updating...' : 'Calculating...') : (isEdit ? 'Update Scorecard' : 'Generate Scorecard')} <Calculator size={20} />
                     </button>
                 </div>
             </form>

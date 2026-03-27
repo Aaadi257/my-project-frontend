@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../api';
-import { Save, ArrowLeft, Download, Trash2 } from 'lucide-react';
+import { Save, ArrowLeft, Download, Trash2, Edit2 } from 'lucide-react';
 
 const ScoreResult = () => {
     const { state } = useLocation();
@@ -54,6 +54,29 @@ const ScoreResult = () => {
         }
     };
 
+    const handleEdit = () => {
+        // Split month string back into month + year for the form selectors
+        const [selectedMonth = '', selectedYear = ''] = (result.month || '').split(' ');
+        const metrics = result.metrics || {};
+
+        navigate('/edit', {
+            state: {
+                isEdit: true,
+                editId: result.id,
+                scorecardData: {
+                    manager_name: result.manager_name || '',
+                    mall_name: result.mall_name || '',
+                    selectedMonth,
+                    selectedYear: selectedYear ? parseInt(selectedYear, 10) : new Date().getFullYear(),
+                    // Spread all metric fields — empty if null so the form shows blank
+                    ...Object.fromEntries(
+                        Object.entries(metrics).map(([k, v]) => [k, v !== null && v !== undefined ? String(v) : ''])
+                    ),
+                },
+            },
+        });
+    };
+
     const BreakdownRow = ({ label, value, max }) => (
         <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
             <span>{label}</span>
@@ -102,12 +125,22 @@ const ScoreResult = () => {
                                     <button className="btn-primary" onClick={handleSave} disabled={saving}>
                                         <Save size={18} /> {saving ? 'Saving...' : 'Save to Leaderboard'}
                                     </button>
+                                    {result.id && (
+                                        <button className="btn-secondary" onClick={handleEdit} style={{ borderColor: 'rgba(245,158,11,0.4)' }}>
+                                            <Edit2 size={18} /> Edit Scorecard
+                                        </button>
+                                    )}
                                     <button className="btn-secondary" style={{ color: '#ef4444' }} onClick={() => navigate('/')}>
-                                        Discard & Exit
+                                        Discard &amp; Exit
                                     </button>
                                 </>
                             ) : (
                                 <>
+                                    {result.id && (
+                                        <button className="btn-secondary" onClick={handleEdit} style={{ borderColor: 'rgba(245,158,11,0.4)' }}>
+                                            <Edit2 size={18} /> Edit Scorecard
+                                        </button>
+                                    )}
                                     <button className="btn-primary" onClick={handleDownload}>
                                         <Download size={18} /> Download Excel
                                     </button>

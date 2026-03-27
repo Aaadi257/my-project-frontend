@@ -11,6 +11,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/new" element={<ScorecardForm />} />
+        <Route path="/edit" element={<ScorecardForm />} />
         <Route path="/result" element={<ScoreResult />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
       </Routes>

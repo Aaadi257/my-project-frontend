@@ -11,7 +11,7 @@ const MetricSection = ({ title, children }) => (
     </div>
 );
 
-const InputGroup = ({ label, name, value, onChange, type = "number", step = "0.1" }) => (
+const InputGroup = ({ label, name, value, onChange, type = "number", step = "0.1", required = false }) => (
     <div>
         <label>{label}</label>
         <input
@@ -20,11 +20,13 @@ const InputGroup = ({ label, name, value, onChange, type = "number", step = "0.1
             name={name}
             value={value}
             onChange={onChange}
-            required
+            required={required}
             placeholder="0"
+            style={value !== '' ? { borderColor: '#f59e0b', boxShadow: '0 0 0 1px rgba(245,158,11,0.3)' } : {}}
         />
     </div>
 );
+
 
 const ScorecardForm = () => {
     const navigate = useNavigate();
@@ -90,63 +92,78 @@ const ScorecardForm = () => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
+    // Helper to calculate active restaurants
+    const calculateActiveRestaurants = () => {
+        let active = new Set();
+        Object.keys(formData).forEach(key => {
+            if (formData[key] !== '') {
+                if (key.includes('amritsari')) active.add('Amritsari');
+                if (key.includes('chennai')) active.add('Chennai');
+                if (key.includes('chaat_masala')) active.add('Chaat Masala');
+            }
+        });
+        return active.size;
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         try {
-            // Convert strings to numbers where appropriate
+            const parseFloatOpt = (val) => val === '' ? null : parseFloat(val);
+            const parseIntOpt = (val) => val === '' ? null : parseInt(val, 10);
+
             const payload = {
                 manager_name: formData.manager_name,
                 mall_name: formData.mall_name,
                 month: `${formData.selectedMonth} ${formData.selectedYear}`,
                 metrics: {
-                    google_rating_amritsari: parseFloat(formData.google_rating_amritsari) || 0,
-                    google_rating_chennai: parseFloat(formData.google_rating_chennai) || 0,
-                    google_rating_chaat_masala: parseFloat(formData.google_rating_chaat_masala) || 0,
+                    google_rating_amritsari: parseFloatOpt(formData.google_rating_amritsari),
+                    google_rating_chennai: parseFloatOpt(formData.google_rating_chennai),
+                    google_rating_chaat_masala: parseFloatOpt(formData.google_rating_chaat_masala),
 
-                    zomato_rating_amritsari: parseFloat(formData.zomato_rating_amritsari) || 0,
-                    swiggy_rating_amritsari: parseFloat(formData.swiggy_rating_amritsari) || 0,
-                    zomato_rating_chennai: parseFloat(formData.zomato_rating_chennai) || 0,
-                    swiggy_rating_chennai: parseFloat(formData.swiggy_rating_chennai) || 0,
-                    zomato_rating_chaat_masala: parseFloat(formData.zomato_rating_chaat_masala) || 0,
-                    swiggy_rating_chaat_masala: parseFloat(formData.swiggy_rating_chaat_masala) || 0,
+                    zomato_rating_amritsari: parseFloatOpt(formData.zomato_rating_amritsari),
+                    swiggy_rating_amritsari: parseFloatOpt(formData.swiggy_rating_amritsari),
+                    zomato_rating_chennai: parseFloatOpt(formData.zomato_rating_chennai),
+                    swiggy_rating_chennai: parseFloatOpt(formData.swiggy_rating_chennai),
+                    zomato_rating_chaat_masala: parseFloatOpt(formData.zomato_rating_chaat_masala),
+                    swiggy_rating_chaat_masala: parseFloatOpt(formData.swiggy_rating_chaat_masala),
 
-                    food_cost_amritsari: parseFloat(formData.food_cost_amritsari) || 0,
-                    food_cost_chennai: parseFloat(formData.food_cost_chennai) || 0,
-                    food_cost_chaat_masala: parseFloat(formData.food_cost_chaat_masala) || 0,
+                    food_cost_amritsari: parseFloatOpt(formData.food_cost_amritsari),
+                    food_cost_chennai: parseFloatOpt(formData.food_cost_chennai),
+                    food_cost_chaat_masala: parseFloatOpt(formData.food_cost_chaat_masala),
 
-                    online_activity_amritsari_zomato: parseFloat(formData.online_activity_amritsari_zomato) || 0,
-                    online_activity_amritsari_swiggy: parseFloat(formData.online_activity_amritsari_swiggy) || 0,
-                    online_activity_chennai_zomato: parseFloat(formData.online_activity_chennai_zomato) || 0,
-                    online_activity_chennai_swiggy: parseFloat(formData.online_activity_chennai_swiggy) || 0,
-                    online_activity_chaat_masala_zomato: parseFloat(formData.online_activity_chaat_masala_zomato) || 0,
-                    online_activity_chaat_masala_swiggy: parseFloat(formData.online_activity_chaat_masala_swiggy) || 0,
+                    online_activity_amritsari_zomato: parseFloatOpt(formData.online_activity_amritsari_zomato),
+                    online_activity_amritsari_swiggy: parseFloatOpt(formData.online_activity_amritsari_swiggy),
+                    online_activity_chennai_zomato: parseFloatOpt(formData.online_activity_chennai_zomato),
+                    online_activity_chennai_swiggy: parseFloatOpt(formData.online_activity_chennai_swiggy),
+                    online_activity_chaat_masala_zomato: parseFloatOpt(formData.online_activity_chaat_masala_zomato),
+                    online_activity_chaat_masala_swiggy: parseFloatOpt(formData.online_activity_chaat_masala_swiggy),
 
-                    kitchen_prep_amritsari_zomato: parseFloat(formData.kitchen_prep_amritsari_zomato) || 0,
-                    kitchen_prep_amritsari_swiggy: parseFloat(formData.kitchen_prep_amritsari_swiggy) || 0,
-                    kitchen_prep_chennai_zomato: parseFloat(formData.kitchen_prep_chennai_zomato) || 0,
-                    kitchen_prep_chennai_swiggy: parseFloat(formData.kitchen_prep_chennai_swiggy) || 0,
-                    kitchen_prep_chaat_masala_zomato: parseFloat(formData.kitchen_prep_chaat_masala_zomato) || 0,
-                    kitchen_prep_chaat_masala_swiggy: parseFloat(formData.kitchen_prep_chaat_masala_swiggy) || 0,
+                    kitchen_prep_amritsari_zomato: parseFloatOpt(formData.kitchen_prep_amritsari_zomato),
+                    kitchen_prep_amritsari_swiggy: parseFloatOpt(formData.kitchen_prep_amritsari_swiggy),
+                    kitchen_prep_chennai_zomato: parseFloatOpt(formData.kitchen_prep_chennai_zomato),
+                    kitchen_prep_chennai_swiggy: parseFloatOpt(formData.kitchen_prep_chennai_swiggy),
+                    kitchen_prep_chaat_masala_zomato: parseFloatOpt(formData.kitchen_prep_chaat_masala_zomato),
+                    kitchen_prep_chaat_masala_swiggy: parseFloatOpt(formData.kitchen_prep_chaat_masala_swiggy),
 
-                    bad_order_amritsari_zomato: parseFloat(formData.bad_order_amritsari_zomato) || 0,
-                    bad_order_chennai_zomato: parseFloat(formData.bad_order_chennai_zomato) || 0,
-                    bad_order_chaat_masala_zomato: parseFloat(formData.bad_order_chaat_masala_zomato) || 0,
+                    bad_order_amritsari_zomato: parseFloatOpt(formData.bad_order_amritsari_zomato),
+                    bad_order_chennai_zomato: parseFloatOpt(formData.bad_order_chennai_zomato),
+                    bad_order_chaat_masala_zomato: parseFloatOpt(formData.bad_order_chaat_masala_zomato),
 
-                    delay_order_amritsari_swiggy: parseFloat(formData.delay_order_amritsari_swiggy) || 0,
-                    delay_order_chennai_swiggy: parseFloat(formData.delay_order_chennai_swiggy) || 0,
-                    delay_order_chaat_masala_swiggy: parseFloat(formData.delay_order_chaat_masala_swiggy) || 0,
+                    delay_order_amritsari_swiggy: parseFloatOpt(formData.delay_order_amritsari_swiggy),
+                    delay_order_chennai_swiggy: parseFloatOpt(formData.delay_order_chennai_swiggy),
+                    delay_order_chaat_masala_swiggy: parseFloatOpt(formData.delay_order_chaat_masala_swiggy),
 
-                    mistakes_amritsari: parseInt(formData.mistakes_amritsari) || 0,
-                    mistakes_chennai: parseInt(formData.mistakes_chennai) || 0,
-                    mistakes_chaat_masala: parseInt(formData.mistakes_chaat_masala) || 0,
+                    mistakes_amritsari: parseIntOpt(formData.mistakes_amritsari),
+                    mistakes_chennai: parseIntOpt(formData.mistakes_chennai),
+                    mistakes_chaat_masala: parseIntOpt(formData.mistakes_chaat_masala),
 
-                    total_sale_amritsari: parseFloat(formData.total_sale_amritsari) || 0,
-                    add_on_sale_amritsari: parseFloat(formData.add_on_sale_amritsari) || 0,
-                    total_sale_chennai: parseFloat(formData.total_sale_chennai) || 0,
-                    add_on_sale_chennai: parseFloat(formData.add_on_sale_chennai) || 0,
-                    total_sale_chaat_masala: parseFloat(formData.total_sale_chaat_masala) || 0,
-                    add_on_sale_chaat_masala: parseFloat(formData.add_on_sale_chaat_masala) || 0,
+                    total_sale_amritsari: parseFloatOpt(formData.total_sale_amritsari),
+                    add_on_sale_amritsari: parseFloatOpt(formData.add_on_sale_amritsari),
+                    total_sale_chennai: parseFloatOpt(formData.total_sale_chennai),
+                    add_on_sale_chennai: parseFloatOpt(formData.add_on_sale_chennai),
+                    total_sale_chaat_masala: parseFloatOpt(formData.total_sale_chaat_masala),
+                    add_on_sale_chaat_masala: parseFloatOpt(formData.add_on_sale_chaat_masala),
                 }
             };
 
@@ -154,8 +171,7 @@ const ScorecardForm = () => {
             navigate('/result', { state: { result: response.data } });
 
         } catch (error) {
-            console.error(error);
-            alert("Error calculating score. Please check inputs.");
+            console.error("Score calculation error", error);
         } finally {
             setLoading(false);
         }
@@ -266,6 +282,9 @@ const ScorecardForm = () => {
                 </MetricSection>
 
                 <div style={{ marginTop: '2rem', textAlign: 'center' }}>
+                    <p style={{ marginBottom: '1rem', color: '#666', fontSize: '0.9rem' }}>
+                        Calculated using <strong>{calculateActiveRestaurants()}</strong> active restaurants based on filled inputs.
+                    </p>
                     <button type="submit" className="btn-primary" disabled={loading} style={{ width: '100%', fontSize: '1.2rem' }}>
                         {loading ? 'Calculating...' : 'Generate Scorecard'} <Calculator size={20} />
                     </button>

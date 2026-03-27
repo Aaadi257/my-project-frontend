@@ -21,8 +21,7 @@ const ScoreResult = () => {
             await api.post('/scorecards', result);
             navigate('/leaderboard');
         } catch (error) {
-            console.error(error);
-            alert('Failed to save');
+            console.error('Score calculation error', error);
         } finally {
             setSaving(false);
         }

@@ -33,8 +33,10 @@ const Leaderboard = () => {
                 throw new Error('Unexpected response from server');
             }
 
-            // Data is already sorted DESC by the backend
-            setScorecards(response.data);
+            // Sort DESC by score client-side (backend guarantees order for leaderboard but adds safety)
+            const sorted = [...response.data].sort((a, b) => (b.total_score ?? 0) - (a.total_score ?? 0));
+            setScorecards(sorted);
+
         } catch (err) {
             console.error('Leaderboard fetch error:', err);
             const msg = err.response?.data?.detail
@@ -180,7 +182,7 @@ const Leaderboard = () => {
                             {scorecards.length === 0 ? (
                                 <tr>
                                     <td colSpan="6" className="text-center" style={{ padding: '2rem', opacity: 0.6 }}>
-                                        {error ? 'Could not load records.' : 'No records found.'}
+                                        No records found.
                                     </td>
                                 </tr>
                             ) : (

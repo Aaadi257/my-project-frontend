@@ -18,10 +18,21 @@ const ScoreResult = () => {
     const handleSave = async () => {
         setSaving(true);
         try {
-            await api.post('/scorecards', result);
+            // Build a proper ScorecardCreate payload - result.metrics contains the raw metrics
+            const createPayload = {
+                manager_name: result.manager_name,
+                mall_name: result.mall_name,
+                month: result.month,
+                metrics: result.metrics,
+            };
+            console.log("[handleSave] Posting to /scorecards:", createPayload);
+            const response = await api.post('/scorecards', createPayload);
+            console.log("[handleSave] Saved successfully:", response.data);
             navigate('/leaderboard');
         } catch (error) {
-            console.error('Score calculation error', error);
+            console.error('Save error:', error);
+            const msg = error.response?.data?.detail || error.message || 'Failed to save scorecard';
+            alert(`Save failed: ${msg}`);
         } finally {
             setSaving(false);
         }

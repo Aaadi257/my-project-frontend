@@ -102,6 +102,10 @@ const ScorecardForm = () => {
         if (location.state?.scorecardData) {
             setFormData(prev => ({ ...prev, ...location.state.scorecardData }));
         }
+
+        // Debug logging for Env variables
+        console.log("VITE_API_BASE Environment Variable:", import.meta.env.VITE_API_BASE);
+        console.log("Resolved API Config BaseURL:", api.defaults.baseURL);
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Helper to calculate active restaurants
@@ -119,6 +123,7 @@ const ScorecardForm = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        console.log("Submit button clicked! Form data:", formData);
         setLoading(true);
         try {
             const parseFloatOpt = (val) => val === '' ? null : parseFloat(val);
@@ -179,18 +184,36 @@ const ScorecardForm = () => {
                 }
             };
 
+            console.log("Submitting payload:", payload);
+
             // POST (create) or PUT (update)
             let response;
             if (isEdit && editId) {
+                console.log(`Sending PUT request to /scorecards/${editId}...`);
                 response = await api.put(`/scorecards/${editId}`, payload);
             } else {
+                console.log(`Sending POST request to /scorecards...`);
                 response = await api.post('/scorecards', payload);
             }
-            navigate('/result', { state: { result: response.data, mode: isEdit ? 'view' : 'preview' } });
+
+            console.log("API response received:", response);
+            if (response && response.data) {
+                navigate('/result', { state: { result: response.data, mode: isEdit ? 'view' : 'preview' } });
+            } else {
+                throw new Error("No data in API response");
+            }
 
         } catch (error) {
-            console.error("Score calculation error", error);
+            console.error("Score calculation API error:", error);
+            let errorMsg;
+            if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+                errorMsg = "Request timed out. The backend server (Render) may be waking up from sleep — please wait 30 seconds and try again.";
+            } else {
+                errorMsg = error.response?.data?.detail || error.message || "Unknown error occurred";
+            }
+            alert(`Failed to generate scorecard:\n\n${errorMsg}`);
         } finally {
+            console.log("Setting loading state to false.");
             setLoading(false);
         }
     };

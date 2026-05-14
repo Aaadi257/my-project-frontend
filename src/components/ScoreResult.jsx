@@ -13,7 +13,25 @@ const ScoreResult = () => {
     }
 
     const { result, mode } = state; // mode='preview' or 'view'
-    const breakdown = result.breakdown;
+    const breakdown = result.breakdown || {};
+    const metrics = result.metrics || {};
+
+    // Use raw values passed directly from the form (most reliable source)
+    // Fall back to backend metrics for view/leaderboard mode where rawNeg won't exist
+    const rawNeg = state.negativeReviewsRaw || {};
+    const negA = isNaN(rawNeg.amritsari) ? (parseInt(metrics.negative_reviews_amritsari) || 0) : (rawNeg.amritsari || 0);
+    const negC = isNaN(rawNeg.chennai) ? (parseInt(metrics.negative_reviews_chennai) || 0) : (rawNeg.chennai || 0);
+    const negCM = isNaN(rawNeg.chaat_masala) ? (parseInt(metrics.negative_reviews_chaat_masala) || 0) : (rawNeg.chaat_masala || 0);
+    const calculatedNegativeScore = (negA + negC + negCM) * -0.25;
+
+    // Use backend value if it's present and non-zero; otherwise use frontend calculation
+    const displayNegativeScore = (breakdown.negative_review_score !== undefined && breakdown.negative_review_score !== 0)
+        ? breakdown.negative_review_score
+        : calculatedNegativeScore;
+
+    const finalTotalScore = (breakdown.negative_review_score !== undefined)
+        ? result.total_score
+        : parseFloat((result.total_score + calculatedNegativeScore).toFixed(2));
 
     const handleSave = async () => {
         setSaving(true);
@@ -91,7 +109,7 @@ const ScoreResult = () => {
     const BreakdownRow = ({ label, value, max }) => (
         <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
             <span>{label}</span>
-            <span style={{ fontWeight: 'bold' }}>{value} <span className="text-sm">/ {max}</span></span>
+            <span style={{ fontWeight: 'bold' }}>{value}{max !== undefined && max !== null ? <span className="text-sm"> / {max}</span> : null}</span>
         </div>
     );
 
@@ -110,7 +128,7 @@ const ScoreResult = () => {
             <div className="card" style={{ maxWidth: '800px', margin: '0 auto' }}>
                 <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
                     <div className="text-sm">Total Score</div>
-                    <div className="score-badge">{result.total_score}</div>
+                    <div className="score-badge">{Number(finalTotalScore).toFixed(2).replace(/\.00$/, '')}</div>
                 </div>
 
                 <div className="grid grid-2">
@@ -123,6 +141,7 @@ const ScoreResult = () => {
                         <BreakdownRow label="Kitchen Prep" value={breakdown.kitchen_prep_score} max="12" />
                         <BreakdownRow label="Bad & Delay Order" value={breakdown.bad_delay_score} max="10" />
                         <BreakdownRow label="Outlet Audit" value={breakdown.outlet_audit_score} max="20" />
+                        <BreakdownRow label="Negative Reviews" value={displayNegativeScore === 0 ? "0" : displayNegativeScore.toFixed(2)} />
                         <BreakdownRow label="Add On Sale" value={breakdown.add_on_sale_score} max="12" />
                     </div>
                     <div>

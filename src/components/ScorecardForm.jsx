@@ -85,6 +85,10 @@ const ScorecardForm = () => {
         mistakes_chennai: '',
         mistakes_chaat_masala: '',
 
+        negative_reviews_amritsari: '',
+        negative_reviews_chennai: '',
+        negative_reviews_chaat_masala: '',
+
         total_sale_amritsari: '',
         add_on_sale_amritsari: '',
         total_sale_chennai: '',
@@ -175,6 +179,10 @@ const ScorecardForm = () => {
                     mistakes_chennai: parseIntOpt(formData.mistakes_chennai),
                     mistakes_chaat_masala: parseIntOpt(formData.mistakes_chaat_masala),
 
+                    negative_reviews_amritsari: parseIntOpt(formData.negative_reviews_amritsari),
+                    negative_reviews_chennai: parseIntOpt(formData.negative_reviews_chennai),
+                    negative_reviews_chaat_masala: parseIntOpt(formData.negative_reviews_chaat_masala),
+
                     total_sale_amritsari: parseFloatOpt(formData.total_sale_amritsari),
                     add_on_sale_amritsari: parseFloatOpt(formData.add_on_sale_amritsari),
                     total_sale_chennai: parseFloatOpt(formData.total_sale_chennai),
@@ -198,7 +206,17 @@ const ScorecardForm = () => {
 
             console.log("API response received:", response);
             if (response && response.data) {
-                navigate('/result', { state: { result: response.data, mode: isEdit ? 'view' : 'preview' } });
+                navigate('/result', {
+                    state: {
+                        result: response.data,
+                        mode: isEdit ? 'view' : 'preview',
+                        negativeReviewsRaw: {
+                            amritsari: parseIntOpt(formData.negative_reviews_amritsari) || 0,
+                            chennai: parseIntOpt(formData.negative_reviews_chennai) || 0,
+                            chaat_masala: parseIntOpt(formData.negative_reviews_chaat_masala) || 0,
+                        },
+                    },
+                });
             } else {
                 throw new Error("No data in API response");
             }
@@ -311,6 +329,12 @@ const ScorecardForm = () => {
                     <InputGroup label="Amritsari Mistakes" name="mistakes_amritsari" value={formData.mistakes_amritsari} onChange={handleChange} type="number" step="1" />
                     <InputGroup label="Chennai Mistakes" name="mistakes_chennai" value={formData.mistakes_chennai} onChange={handleChange} type="number" step="1" />
                     <InputGroup label="Chaat Masala Mistakes" name="mistakes_chaat_masala" value={formData.mistakes_chaat_masala} onChange={handleChange} type="number" step="1" />
+                </MetricSection>
+
+                <MetricSection title="Negative Reviews">
+                    <InputGroup label="Amritsari" name="negative_reviews_amritsari" value={formData.negative_reviews_amritsari} onChange={handleChange} type="number" step="1" />
+                    <InputGroup label="Cafe Chennai" name="negative_reviews_chennai" value={formData.negative_reviews_chennai} onChange={handleChange} type="number" step="1" />
+                    <InputGroup label="Chaat Masala" name="negative_reviews_chaat_masala" value={formData.negative_reviews_chaat_masala} onChange={handleChange} type="number" step="1" />
                 </MetricSection>
 
                 <MetricSection title="Add On Sale">

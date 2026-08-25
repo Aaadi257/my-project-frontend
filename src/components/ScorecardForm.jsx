@@ -3,6 +3,24 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../api';
 import { Calculator } from 'lucide-react';
 
+// Month names (index 0 = January) used for the rolling evaluation-period calculation
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+// Compute the trailing 3-month period ending with the selected month, handling year rollover.
+// e.g. ("August", 2026) -> "June 2026 – August 2026"; ("January", 2027) -> "November 2026 – January 2027"
+const getEvaluationPeriod = (monthName, year) => {
+    const endIdx = MONTHS.indexOf(monthName);
+    const endYear = parseInt(year, 10);
+    if (endIdx === -1 || isNaN(endYear)) return '';
+    let startIdx = endIdx - 2;
+    let startYear = endYear;
+    if (startIdx < 0) {
+        startIdx += 12;
+        startYear -= 1;
+    }
+    return `${MONTHS[startIdx]} ${startYear} – ${monthName} ${endYear}`;
+};
+
 // Helper Components defined outside to prevent re-renders losing focus
 const MetricSection = ({ title, children }) => (
     <div className="metric-group fade-in">
@@ -95,6 +113,11 @@ const ScorecardForm = () => {
         add_on_sale_chennai: '',
         total_sale_chaat_masala: '',
         add_on_sale_chaat_masala: '',
+
+        inventory_form: 'filled_incorrectly',
+
+        staff_alteration: '',
+        manager_quarterly_leave: '',
     });
 
     const handleChange = (e) => {
@@ -104,7 +127,15 @@ const ScorecardForm = () => {
     // Prefill form when navigating from Edit button
     useEffect(() => {
         if (location.state?.scorecardData) {
-            setFormData(prev => ({ ...prev, ...location.state.scorecardData }));
+            const incoming = { ...location.state.scorecardData };
+            // Backward-compat: map legacy Inventory Form values to the new Software Inventory options
+            if (incoming.inventory_form === 'filled') {
+                incoming.inventory_form = 'filled_correctly';
+            } else if (incoming.inventory_form !== 'filled_correctly' && incoming.inventory_form !== 'filled_incorrectly') {
+                // 'not_filled', '', null or missing → treat as Filled Incorrectly (0 pts, matches prior score)
+                incoming.inventory_form = 'filled_incorrectly';
+            }
+            setFormData(prev => ({ ...prev, ...incoming }));
         }
 
         // Debug logging for Env variables
@@ -189,6 +220,11 @@ const ScorecardForm = () => {
                     add_on_sale_chennai: parseFloatOpt(formData.add_on_sale_chennai),
                     total_sale_chaat_masala: parseFloatOpt(formData.total_sale_chaat_masala),
                     add_on_sale_chaat_masala: parseFloatOpt(formData.add_on_sale_chaat_masala),
+
+                    inventory_form: formData.inventory_form,
+
+                    staff_alteration: parseIntOpt(formData.staff_alteration),
+                    manager_quarterly_leave: parseFloatOpt(formData.manager_quarterly_leave),
                 }
             };
 
@@ -235,6 +271,8 @@ const ScorecardForm = () => {
             setLoading(false);
         }
     };
+
+    const evaluationPeriod = getEvaluationPeriod(formData.selectedMonth, formData.selectedYear);
 
     return (
         <div className="container animate-fade-in">
@@ -344,6 +382,30 @@ const ScorecardForm = () => {
                     <InputGroup label="Chennai AOS" name="add_on_sale_chennai" value={formData.add_on_sale_chennai} onChange={handleChange} />
                     <InputGroup label="CM Total" name="total_sale_chaat_masala" value={formData.total_sale_chaat_masala} onChange={handleChange} />
                     <InputGroup label="CM AOS" name="add_on_sale_chaat_masala" value={formData.add_on_sale_chaat_masala} onChange={handleChange} />
+                </MetricSection>
+
+                <MetricSection title="Software Inventory">
+                    <div>
+                        <label>Software Inventory Status</label>
+                        <select name="inventory_form" value={formData.inventory_form} onChange={handleChange}>
+                            <option value="filled_incorrectly">Filled Incorrectly</option>
+                            <option value="filled_correctly">Filled Correctly</option>
+                        </select>
+                    </div>
+                </MetricSection>
+
+                <MetricSection title="Staff Alteration">
+                    <p className="text-sm" style={{ gridColumn: '1 / -1', marginTop: '-0.5rem' }}>
+                        Evaluation Period: <strong style={{ color: 'var(--accent)' }}>{evaluationPeriod}</strong> (trailing 3 months)
+                    </p>
+                    <InputGroup label="Number of staff alterations" name="staff_alteration" value={formData.staff_alteration} onChange={handleChange} type="number" step="1" />
+                </MetricSection>
+
+                <MetricSection title="Manager Quarterly Leave">
+                    <p className="text-sm" style={{ gridColumn: '1 / -1', marginTop: '-0.5rem' }}>
+                        Evaluation Period: <strong style={{ color: 'var(--accent)' }}>{evaluationPeriod}</strong> (trailing 3 months)
+                    </p>
+                    <InputGroup label="Leave days in period" name="manager_quarterly_leave" value={formData.manager_quarterly_leave} onChange={handleChange} type="number" step="0.5" />
                 </MetricSection>
 
                 <div style={{ marginTop: '2rem', textAlign: 'center' }}>

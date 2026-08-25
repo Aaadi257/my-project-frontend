@@ -3,6 +3,24 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../api';
 import { Save, ArrowLeft, Download, Trash2, Edit2 } from 'lucide-react';
 
+// Month names (index 0 = January) for deriving the rolling evaluation period from a stored "Month Year" string
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+// e.g. "August 2026" -> "June 2026 – August 2026" (trailing 3 months, with year rollover)
+const getEvaluationPeriod = (monthString) => {
+    const [monthName, yearStr] = (monthString || '').split(' ');
+    const endIdx = MONTHS.indexOf(monthName);
+    const endYear = parseInt(yearStr, 10);
+    if (endIdx === -1 || isNaN(endYear)) return '';
+    let startIdx = endIdx - 2;
+    let startYear = endYear;
+    if (startIdx < 0) {
+        startIdx += 12;
+        startYear -= 1;
+    }
+    return `${MONTHS[startIdx]} ${startYear} – ${monthName} ${endYear}`;
+};
+
 const ScoreResult = () => {
     const { state } = useLocation();
     const navigate = useNavigate();
@@ -143,12 +161,16 @@ const ScoreResult = () => {
                         <BreakdownRow label="Outlet Audit" value={breakdown.outlet_audit_score} max="20" />
                         <BreakdownRow label="Negative Reviews" value={displayNegativeScore === 0 ? "0" : displayNegativeScore.toFixed(2)} />
                         <BreakdownRow label="Add On Sale" value={breakdown.add_on_sale_score} max="12" />
+                        <BreakdownRow label="Software Inventory" value={breakdown.inventory_form_score} max="10" />
+                        <BreakdownRow label="Staff Alteration" value={breakdown.staff_alteration_score} max="10" />
+                        <BreakdownRow label="Manager Quarterly Leave" value={breakdown.manager_quarterly_leave_score} max="10" />
                     </div>
                     <div>
                         <h3>Details</h3>
                         <p><strong>Month:</strong> {result.month}</p>
                         <p><strong>Manager:</strong> {result.manager_name}</p>
                         <p><strong>Mall:</strong> {result.mall_name}</p>
+                        <p className="text-sm"><strong>Staff Alteration / Quarterly Leave period:</strong> {getEvaluationPeriod(result.month) || '—'}</p>
                         <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                             {mode === 'preview' ? (
                                 <>
